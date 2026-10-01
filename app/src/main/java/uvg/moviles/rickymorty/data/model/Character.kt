@@ -1,4 +1,4 @@
-package uvg.moviles.rickymorty
+package uvg.moviles.rickymorty.data.model
 
 data class Character(
     val id: Int,

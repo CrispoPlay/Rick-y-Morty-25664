@@ -1,7 +1,9 @@
-package uvg.moviles.rickymorty
+package uvg.moviles.rickymorty.data
+
+import uvg.moviles.rickymorty.data.model.Character
 
 class CharacterDb {
-    private val characters: List<Character> = listOf(
+    private val characters = listOf(
         Character(1, "Rick Sanchez", "Alive", "Human", "Male", "https://rickandmortyapi.com/api/character/avatar/1.jpeg"),
         Character(2, "Morty Smith", "Alive", "Human", "Male", "https://rickandmortyapi.com/api/character/avatar/2.jpeg"),
         Character(3, "Summer Smith", "Alive", "Human", "Female", "https://rickandmortyapi.com/api/character/avatar/3.jpeg"),
@@ -25,6 +27,5 @@ class CharacterDb {
     )
 
     fun getAllCharacters(): List<Character> = characters
-
     fun getCharacterById(id: Int): Character = characters.first { it.id == id }
 }
