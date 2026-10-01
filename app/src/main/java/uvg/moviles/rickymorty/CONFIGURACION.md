@@ -33,7 +33,7 @@ ui/
 
 ## Compilación y entrega
 
-La branch del laboratorio es `codex/laboratorio8`. Para generar el APK:
+La branch del laboratorio es `laboratorio8`. Para generar el APK:
 
 ```powershell
 .\gradlew.bat assembleDebug
