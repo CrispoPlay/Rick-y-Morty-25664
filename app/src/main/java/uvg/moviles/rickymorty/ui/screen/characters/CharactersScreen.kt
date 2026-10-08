@@ -19,25 +19,46 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import uvg.moviles.rickymorty.data.model.Character
+import uvg.moviles.rickymorty.ui.components.ErrorContent
+import uvg.moviles.rickymorty.ui.components.LoadingContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CharactersScreen(characters: List<Character>, onCharacterClick: (Int) -> Unit) {
+fun CharactersScreen(
+    onCharacterClick: (Int) -> Unit,
+    viewModel: CharactersViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(topBar = { CenterAlignedTopAppBar(title = { Text("Characters") }) }) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            items(characters, key = { it.id }) { character ->
-                CharacterRow(character = character, onClick = { onCharacterClick(character.id) })
+        when {
+            uiState.hasError -> ErrorContent(
+                message = "Error al obtener listado de personajes.",
+                onRetry = viewModel::loadCharacters,
+                modifier = Modifier.padding(innerPadding)
+            )
+            uiState.isLoading -> LoadingContent(
+                onClick = viewModel::showError,
+                modifier = Modifier.padding(innerPadding)
+            )
+            else -> LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(uiState.data, key = { it.id }) { character ->
+                    CharacterRow(character = character, onClick = { onCharacterClick(character.id) })
+                }
             }
         }
     }

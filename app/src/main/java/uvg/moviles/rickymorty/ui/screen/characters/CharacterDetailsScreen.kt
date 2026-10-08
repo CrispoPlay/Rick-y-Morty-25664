@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,13 +25,22 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import uvg.moviles.rickymorty.data.model.Character
 import uvg.moviles.rickymorty.ui.components.DetailRow
+import uvg.moviles.rickymorty.ui.components.ErrorContent
+import uvg.moviles.rickymorty.ui.components.LoadingContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CharacterDetailsScreen(character: Character, onBackClick: () -> Unit) {
+fun CharacterDetailsScreen(
+    onBackClick: () -> Unit,
+    viewModel: CharacterDetailsViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -43,22 +53,48 @@ fun CharacterDetailsScreen(character: Character, onBackClick: () -> Unit) {
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 28.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AsyncImage(
-                model = character.image,
-                contentDescription = "Imagen de ${character.name}",
-                modifier = Modifier.size(220.dp).clip(CircleShape),
-                contentScale = ContentScale.Crop
+        when {
+            uiState.hasError -> ErrorContent(
+                message = "Error al obtener el personaje.",
+                onRetry = viewModel::loadCharacter,
+                modifier = Modifier.padding(innerPadding)
             )
-            Spacer(Modifier.height(20.dp))
-            Text(character.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(32.dp))
-            DetailRow("Species", character.species)
-            DetailRow("Status", character.status)
-            DetailRow("Gender", character.gender)
+            uiState.isLoading -> LoadingContent(
+                onClick = viewModel::showError,
+                modifier = Modifier.padding(innerPadding)
+            )
+            else -> uiState.data?.let { character ->
+                CharacterDetailsContent(
+                    character = character,
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun CharacterDetailsContent(character: Character, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        AsyncImage(
+            model = character.image,
+            contentDescription = "Imagen de ${character.name}",
+            modifier = Modifier.size(220.dp).clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+        Spacer(Modifier.height(20.dp))
+        Text(
+            character.name,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(32.dp))
+        DetailRow("Species", character.species)
+        DetailRow("Status", character.status)
+        DetailRow("Gender", character.gender)
     }
 }

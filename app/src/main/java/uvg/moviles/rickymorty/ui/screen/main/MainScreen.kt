@@ -11,7 +11,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -23,9 +22,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import uvg.moviles.rickymorty.data.CharacterDb
-import uvg.moviles.rickymorty.data.LocationDb
 import uvg.moviles.rickymorty.navigation.CharacterDetailsDestination
 import uvg.moviles.rickymorty.navigation.CharactersDestination
 import uvg.moviles.rickymorty.navigation.CharactersGraph
@@ -48,8 +44,6 @@ private enum class MainTab(val label: String, val icon: ImageVector) {
 @Composable
 fun MainScreen(onLogout: () -> Unit) {
     val navController = rememberNavController()
-    val characterDb = remember { CharacterDb() }
-    val locationDb = remember { LocationDb() }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
@@ -101,14 +95,11 @@ fun MainScreen(onLogout: () -> Unit) {
             navigation<CharactersGraph>(startDestination = CharactersDestination) {
                 composable<CharactersDestination> {
                     CharactersScreen(
-                        characters = characterDb.getAllCharacters(),
                         onCharacterClick = { navController.navigate(CharacterDetailsDestination(it)) }
                     )
                 }
-                composable<CharacterDetailsDestination> { entry ->
-                    val destination = entry.toRoute<CharacterDetailsDestination>()
+                composable<CharacterDetailsDestination> {
                     CharacterDetailsScreen(
-                        character = characterDb.getCharacterById(destination.characterId),
                         onBackClick = { navController.popBackStack() }
                     )
                 }
@@ -116,14 +107,11 @@ fun MainScreen(onLogout: () -> Unit) {
             navigation<LocationsGraph>(startDestination = LocationsDestination) {
                 composable<LocationsDestination> {
                     LocationsScreen(
-                        locations = locationDb.getAllLocations(),
                         onLocationClick = { navController.navigate(LocationDetailsDestination(it)) }
                     )
                 }
-                composable<LocationDetailsDestination> { entry ->
-                    val destination = entry.toRoute<LocationDetailsDestination>()
+                composable<LocationDetailsDestination> {
                     LocationDetailsScreen(
-                        location = locationDb.getLocationById(destination.locationId),
                         onBackClick = { navController.popBackStack() }
                     )
                 }
