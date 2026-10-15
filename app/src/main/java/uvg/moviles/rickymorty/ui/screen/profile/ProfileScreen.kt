@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ProfileScreen(onLogout: () -> Unit) {
+fun ProfileScreen(userName: String, onLogout: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -37,7 +37,7 @@ fun ProfileScreen(onLogout: () -> Unit) {
             tint = MaterialTheme.colorScheme.onSecondaryContainer
         )
         Spacer(Modifier.height(48.dp))
-        ProfileRow("Nombre", "Cristian Estuardo Orellana Dieguez")
+        ProfileRow("Nombre", userName)
         ProfileRow("Carné", "25664")
         Spacer(Modifier.height(40.dp))
         Button(onClick = onLogout) {

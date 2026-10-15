@@ -11,7 +11,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             RickYMortyTheme {
-                RickAndMortyApp()
+                RickAndMortyApp(onExitApp = ::finish)
             }
         }
     }

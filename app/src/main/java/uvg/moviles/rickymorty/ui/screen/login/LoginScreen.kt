@@ -1,6 +1,9 @@
 package uvg.moviles.rickymorty.ui.screen.login
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,19 +14,38 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import uvg.moviles.rickymorty.R
 
 @Composable
-fun LoginScreen(onStartClick: () -> Unit) {
+fun LoginScreen(onBack: () -> Unit, onLogin: (String) -> Unit) {
+    BackHandler(onBack = onBack)
+
+    var name by rememberSaveable { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+    val normalizedName = name.trim()
+    val submit = {
+        if (normalizedName.isNotEmpty()) {
+            focusManager.clearFocus()
+            onLogin(normalizedName)
+        }
+    }
+
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp)) {
             Column(
@@ -36,13 +58,24 @@ fun LoginScreen(onStartClick: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(0.85f).height(150.dp),
                     contentScale = ContentScale.Fit
                 )
-                Spacer(Modifier.height(32.dp))
+                Spacer(Modifier.height(20.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Nombre") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { submit() })
+                )
+                Spacer(Modifier.height(16.dp))
                 Button(
-                    onClick = onStartClick,
+                    onClick = submit,
+                    enabled = normalizedName.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("Empezar")
+                    Text("Iniciar sesión")
                 }
             }
             Text(

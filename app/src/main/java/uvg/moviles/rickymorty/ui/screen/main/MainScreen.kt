@@ -1,5 +1,6 @@
 package uvg.moviles.rickymorty.ui.screen.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
@@ -42,10 +43,15 @@ private enum class MainTab(val label: String, val icon: ImageVector) {
 }
 
 @Composable
-fun MainScreen(onLogout: () -> Unit) {
+fun MainScreen(userName: String, onExit: () -> Unit, onLogout: () -> Unit) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+
+    BackHandler(
+        enabled = currentDestination?.hasRoute<CharactersDestination>() == true,
+        onBack = onExit
+    )
 
     Scaffold(
         bottomBar = {
@@ -117,7 +123,7 @@ fun MainScreen(onLogout: () -> Unit) {
                 }
             }
             composable<ProfileDestination> {
-                ProfileScreen(onLogout = onLogout)
+                ProfileScreen(userName = userName, onLogout = onLogout)
             }
         }
     }

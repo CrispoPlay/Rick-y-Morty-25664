@@ -2,6 +2,7 @@ package uvg.moviles.rickymorty.navigation
 
 import kotlinx.serialization.Serializable
 
+@Serializable data object SessionDestination
 @Serializable data object LoginDestination
 @Serializable data object MainDestination
 @Serializable data object CharactersGraph
