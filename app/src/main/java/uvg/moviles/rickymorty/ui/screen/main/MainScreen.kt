@@ -24,6 +24,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import uvg.moviles.rickymorty.navigation.CharacterDetailsDestination
+import uvg.moviles.rickymorty.data.local.CharacterDao
+import uvg.moviles.rickymorty.data.local.LocationDao
 import uvg.moviles.rickymorty.navigation.CharactersDestination
 import uvg.moviles.rickymorty.navigation.CharactersGraph
 import uvg.moviles.rickymorty.navigation.LocationDetailsDestination
@@ -43,7 +45,13 @@ private enum class MainTab(val label: String, val icon: ImageVector) {
 }
 
 @Composable
-fun MainScreen(userName: String, onExit: () -> Unit, onLogout: () -> Unit) {
+fun MainScreen(
+    userName: String,
+    characterDao: CharacterDao,
+    locationDao: LocationDao,
+    onExit: () -> Unit,
+    onLogout: () -> Unit
+) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -101,11 +109,13 @@ fun MainScreen(userName: String, onExit: () -> Unit, onLogout: () -> Unit) {
             navigation<CharactersGraph>(startDestination = CharactersDestination) {
                 composable<CharactersDestination> {
                     CharactersScreen(
+                        characterDao = characterDao,
                         onCharacterClick = { navController.navigate(CharacterDetailsDestination(it)) }
                     )
                 }
                 composable<CharacterDetailsDestination> {
                     CharacterDetailsScreen(
+                        characterDao = characterDao,
                         onBackClick = { navController.popBackStack() }
                     )
                 }
@@ -113,11 +123,13 @@ fun MainScreen(userName: String, onExit: () -> Unit, onLogout: () -> Unit) {
             navigation<LocationsGraph>(startDestination = LocationsDestination) {
                 composable<LocationsDestination> {
                     LocationsScreen(
+                        locationDao = locationDao,
                         onLocationClick = { navController.navigate(LocationDetailsDestination(it)) }
                     )
                 }
                 composable<LocationDetailsDestination> {
                     LocationDetailsScreen(
+                        locationDao = locationDao,
                         onBackClick = { navController.popBackStack() }
                     )
                 }

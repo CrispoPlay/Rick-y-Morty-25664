@@ -19,7 +19,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import uvg.moviles.rickymorty.data.InitialSyncRepository
 import uvg.moviles.rickymorty.data.UserPreferencesRepository
+import uvg.moviles.rickymorty.data.local.RickAndMortyDatabase
 import uvg.moviles.rickymorty.ui.screen.login.LoginScreen
 import uvg.moviles.rickymorty.ui.screen.main.MainScreen
 
@@ -30,12 +32,24 @@ fun RickAndMortyApp(
 ) {
     val context = LocalContext.current
     val preferencesRepository = remember(context) { UserPreferencesRepository(context) }
+    val database = remember(context) { RickAndMortyDatabase.getInstance(context) }
+    val syncRepository = remember(database) { InitialSyncRepository(database) }
     val coroutineScope = rememberCoroutineScope()
     var userName by remember { mutableStateOf<String?>(null) }
     var sessionChecked by remember { mutableStateOf(false) }
+    var isSyncing by remember { mutableStateOf(false) }
+    var loginError by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(preferencesRepository) {
-        userName = preferencesRepository.userName.first()
+    LaunchedEffect(preferencesRepository, syncRepository) {
+        val savedName = preferencesRepository.userName.first()
+        if (savedName != null) {
+            runCatching { syncRepository.syncIfNeeded(simulateLoading = false) }
+                .onSuccess { userName = savedName }
+                .onFailure {
+                    preferencesRepository.clearUserName()
+                    userName = null
+                }
+        }
         sessionChecked = true
     }
 
@@ -58,14 +72,25 @@ fun RickAndMortyApp(
         composable<LoginDestination> {
             LoginScreen(
                 onBack = onExitApp,
+                isLoading = isSyncing,
+                errorMessage = loginError,
                 onLogin = { name ->
                     coroutineScope.launch {
-                        preferencesRepository.saveUserName(name)
-                        userName = name
-                        navController.navigate(MainDestination) {
-                            popUpTo<LoginDestination> { inclusive = true }
-                            launchSingleTop = true
+                        isSyncing = true
+                        loginError = null
+                        runCatching {
+                            syncRepository.syncIfNeeded()
+                            preferencesRepository.saveUserName(name)
+                        }.onSuccess {
+                            userName = name
+                            navController.navigate(MainDestination) {
+                                popUpTo<LoginDestination> { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }.onFailure {
+                            loginError = "No se pudieron sincronizar los datos. Intenta de nuevo."
                         }
+                        isSyncing = false
                     }
                 }
             )
@@ -73,14 +98,20 @@ fun RickAndMortyApp(
         composable<MainDestination> {
             MainScreen(
                 userName = userName.orEmpty(),
+                characterDao = database.characterDao(),
+                locationDao = database.locationDao(),
                 onExit = onExitApp,
                 onLogout = {
                     coroutineScope.launch {
-                        preferencesRepository.clearUserName()
-                        userName = null
-                        navController.navigate(LoginDestination) {
-                            popUpTo<MainDestination> { inclusive = true }
-                            launchSingleTop = true
+                        try {
+                            syncRepository.clearAll()
+                        } finally {
+                            preferencesRepository.clearUserName()
+                            userName = null
+                            navController.navigate(LoginDestination) {
+                                popUpTo<MainDestination> { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     }
                 }

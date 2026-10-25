@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import uvg.moviles.rickymorty.data.local.LocationDao
 import uvg.moviles.rickymorty.data.model.Location
 import uvg.moviles.rickymorty.ui.components.DetailRow
 import uvg.moviles.rickymorty.ui.components.ErrorContent
@@ -31,8 +32,9 @@ import uvg.moviles.rickymorty.ui.components.LoadingContent
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationDetailsScreen(
+    locationDao: LocationDao,
     onBackClick: () -> Unit,
-    viewModel: LocationDetailsViewModel = viewModel()
+    viewModel: LocationDetailsViewModel = viewModel(factory = LocationDetailsViewModel.factory(locationDao))
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -51,11 +53,11 @@ fun LocationDetailsScreen(
         when {
             uiState.hasError -> ErrorContent(
                 message = "Error al obtener la ubicación.",
-                onRetry = viewModel::loadLocation,
+                onRetry = {},
                 modifier = Modifier.padding(innerPadding)
             )
             uiState.isLoading -> LoadingContent(
-                onClick = viewModel::showError,
+                onClick = {},
                 modifier = Modifier.padding(innerPadding)
             )
             else -> uiState.data?.let { location ->

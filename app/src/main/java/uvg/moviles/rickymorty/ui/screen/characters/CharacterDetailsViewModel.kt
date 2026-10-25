@@ -2,15 +2,20 @@ package uvg.moviles.rickymorty.ui.screen.characters
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.toRoute
-import uvg.moviles.rickymorty.data.CharacterDb
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import uvg.moviles.rickymorty.data.local.CharacterDao
+import uvg.moviles.rickymorty.data.local.toModel
 import uvg.moviles.rickymorty.data.model.Character
 import uvg.moviles.rickymorty.navigation.CharacterDetailsDestination
 
@@ -20,32 +25,27 @@ data class CharacterDetailsUiState(
     val hasError: Boolean = false
 )
 
-class CharacterDetailsViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
+class CharacterDetailsViewModel(
+    savedStateHandle: SavedStateHandle,
+    private val characterDao: CharacterDao
+) : ViewModel() {
     private val characterId = savedStateHandle.toRoute<CharacterDetailsDestination>().characterId
-    private val characterDb = CharacterDb()
-    private val _uiState = MutableStateFlow(CharacterDetailsUiState())
-    val uiState: StateFlow<CharacterDetailsUiState> = _uiState.asStateFlow()
-    private var loadingJob: Job? = null
 
-    init {
-        loadCharacter()
-    }
+    val uiState: StateFlow<CharacterDetailsUiState> = characterDao.observeById(characterId)
+        .map { CharacterDetailsUiState(isLoading = false, data = it?.toModel()) }
+        .catch { emit(CharacterDetailsUiState(isLoading = false, hasError = true)) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CharacterDetailsUiState())
 
-    fun loadCharacter() {
-        loadingJob?.cancel()
-        _uiState.value = CharacterDetailsUiState(isLoading = true)
-        loadingJob = viewModelScope.launch {
-            delay(2_000)
-            _uiState.value = CharacterDetailsUiState(
-                isLoading = false,
-                data = characterDb.getCharacterById(characterId)
-            )
+    fun toggleFavorite() {
+        val character = uiState.value.data ?: return
+        viewModelScope.launch {
+            characterDao.updateFavorite(character.id, !character.isFavorite)
         }
     }
 
-    fun showError() {
-        if (!_uiState.value.isLoading) return
-        loadingJob?.cancel()
-        _uiState.value = CharacterDetailsUiState(isLoading = false, hasError = true)
+    companion object {
+        fun factory(characterDao: CharacterDao): ViewModelProvider.Factory = viewModelFactory {
+            initializer { CharacterDetailsViewModel(createSavedStateHandle(), characterDao) }
+        }
     }
 }

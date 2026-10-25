@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -33,14 +35,19 @@ import androidx.compose.ui.unit.dp
 import uvg.moviles.rickymorty.R
 
 @Composable
-fun LoginScreen(onBack: () -> Unit, onLogin: (String) -> Unit) {
-    BackHandler(onBack = onBack)
+fun LoginScreen(
+    onBack: () -> Unit,
+    onLogin: (String) -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null
+) {
+    BackHandler(enabled = !isLoading, onBack = onBack)
 
     var name by rememberSaveable { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
     val normalizedName = name.trim()
     val submit = {
-        if (normalizedName.isNotEmpty()) {
+        if (normalizedName.isNotEmpty() && !isLoading) {
             focusManager.clearFocus()
             onLogin(normalizedName)
         }
@@ -62,6 +69,7 @@ fun LoginScreen(onBack: () -> Unit, onLogin: (String) -> Unit) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
+                    enabled = !isLoading,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Nombre") },
                     singleLine = true,
@@ -71,11 +79,26 @@ fun LoginScreen(onBack: () -> Unit, onLogin: (String) -> Unit) {
                 Spacer(Modifier.height(16.dp))
                 Button(
                     onClick = submit,
-                    enabled = normalizedName.isNotEmpty(),
+                    enabled = normalizedName.isNotEmpty() && !isLoading,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("Iniciar sesión")
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Iniciar sesión")
+                    }
+                }
+                if (isLoading) {
+                    Spacer(Modifier.height(12.dp))
+                    Text("Sincronizando datos locales…")
+                }
+                errorMessage?.let {
+                    Spacer(Modifier.height(12.dp))
+                    Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                 }
             }
             Text(

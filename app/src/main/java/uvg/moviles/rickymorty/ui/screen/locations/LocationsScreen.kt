@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import uvg.moviles.rickymorty.data.local.LocationDao
 import uvg.moviles.rickymorty.data.model.Location
 import uvg.moviles.rickymorty.ui.components.ErrorContent
 import uvg.moviles.rickymorty.ui.components.LoadingContent
@@ -28,8 +29,9 @@ import uvg.moviles.rickymorty.ui.components.LoadingContent
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationsScreen(
+    locationDao: LocationDao,
     onLocationClick: (Int) -> Unit,
-    viewModel: LocationsViewModel = viewModel()
+    viewModel: LocationsViewModel = viewModel(factory = LocationsViewModel.factory(locationDao))
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -37,11 +39,11 @@ fun LocationsScreen(
         when {
             uiState.hasError -> ErrorContent(
                 message = "Error al obtener listado de ubicaciones.",
-                onRetry = viewModel::loadLocations,
+                onRetry = {},
                 modifier = Modifier.padding(innerPadding)
             )
             uiState.isLoading -> LoadingContent(
-                onClick = viewModel::showError,
+                onClick = {},
                 modifier = Modifier.padding(innerPadding)
             )
             else -> LazyColumn(

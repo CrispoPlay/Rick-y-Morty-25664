@@ -1,14 +1,17 @@
 package uvg.moviles.rickymorty.ui.screen.locations
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import uvg.moviles.rickymorty.data.LocationDb
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import uvg.moviles.rickymorty.data.local.LocationDao
+import uvg.moviles.rickymorty.data.local.toModel
 import uvg.moviles.rickymorty.data.model.Location
 
 data class LocationsUiState(
@@ -17,31 +20,15 @@ data class LocationsUiState(
     val hasError: Boolean = false
 )
 
-class LocationsViewModel : ViewModel() {
-    private val locationDb = LocationDb()
-    private val _uiState = MutableStateFlow(LocationsUiState())
-    val uiState: StateFlow<LocationsUiState> = _uiState.asStateFlow()
-    private var loadingJob: Job? = null
+class LocationsViewModel(locationDao: LocationDao) : ViewModel() {
+    val uiState: StateFlow<LocationsUiState> = locationDao.observeAll()
+        .map { entities -> LocationsUiState(isLoading = false, data = entities.map { it.toModel() }) }
+        .catch { emit(LocationsUiState(isLoading = false, hasError = true)) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LocationsUiState())
 
-    init {
-        loadLocations()
-    }
-
-    fun loadLocations() {
-        loadingJob?.cancel()
-        _uiState.value = LocationsUiState(isLoading = true)
-        loadingJob = viewModelScope.launch {
-            delay(4_000)
-            _uiState.value = LocationsUiState(
-                isLoading = false,
-                data = locationDb.getAllLocations()
-            )
+    companion object {
+        fun factory(locationDao: LocationDao): ViewModelProvider.Factory = viewModelFactory {
+            initializer { LocationsViewModel(locationDao) }
         }
-    }
-
-    fun showError() {
-        if (!_uiState.value.isLoading) return
-        loadingJob?.cancel()
-        _uiState.value = LocationsUiState(isLoading = false, hasError = true)
     }
 }

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -28,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import uvg.moviles.rickymorty.data.local.CharacterDao
 import uvg.moviles.rickymorty.data.model.Character
 import uvg.moviles.rickymorty.ui.components.DetailRow
 import uvg.moviles.rickymorty.ui.components.ErrorContent
@@ -36,8 +39,9 @@ import uvg.moviles.rickymorty.ui.components.LoadingContent
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterDetailsScreen(
+    characterDao: CharacterDao,
     onBackClick: () -> Unit,
-    viewModel: CharacterDetailsViewModel = viewModel()
+    viewModel: CharacterDetailsViewModel = viewModel(factory = CharacterDetailsViewModel.factory(characterDao))
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -49,6 +53,18 @@ fun CharacterDetailsScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
                     }
+                },
+                actions = {
+                    uiState.data?.let { character ->
+                        IconButton(onClick = viewModel::toggleFavorite) {
+                            Icon(
+                                if (character.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription = if (character.isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                                tint = if (character.isFavorite) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             )
         }
@@ -56,23 +72,21 @@ fun CharacterDetailsScreen(
         when {
             uiState.hasError -> ErrorContent(
                 message = "Error al obtener el personaje.",
-                onRetry = viewModel::loadCharacter,
+                onRetry = {},
                 modifier = Modifier.padding(innerPadding)
             )
-            uiState.isLoading -> LoadingContent(
-                onClick = viewModel::showError,
+            uiState.isLoading -> LoadingContent(onClick = {}, modifier = Modifier.padding(innerPadding))
+            uiState.data == null -> Text(
+                "Personaje no encontrado.",
+                modifier = Modifier.padding(innerPadding).padding(24.dp)
+            )
+            else -> CharacterDetailsContent(
+                character = requireNotNull(uiState.data),
                 modifier = Modifier.padding(innerPadding)
             )
-            else -> uiState.data?.let { character ->
-                CharacterDetailsContent(
-                    character = character,
-                    modifier = Modifier.padding(innerPadding)
-                )
-            }
         }
     }
 }
-
 @Composable
 private fun CharacterDetailsContent(character: Character, modifier: Modifier = Modifier) {
     Column(
